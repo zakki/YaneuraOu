@@ -648,7 +648,7 @@ public:
 	// UnitTest
 	static void UnitTest(Test::UnitTester&);
 
-private:
+//private:
 	// StateInfoの初期化(初期化するときに内部的に用いる)
 	void set_state(StateInfo* si) const;
 
