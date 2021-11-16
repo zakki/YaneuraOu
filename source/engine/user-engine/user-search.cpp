@@ -1,7 +1,8 @@
 ﻿#include "../../types.h"
 #include "../../extra/all.h"
 
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 #if defined(USER_ENGINE)
 
@@ -9,7 +10,7 @@ void uni_search2(Position& pos, StateInfo* si__, Thread* th)
 {
   ExtMove moves[MAX_MOVES];
   std::vector<PackedSfen> sfens;
-  std::set<HASH_KEY> sfensUniq;
+  std::unordered_set<HASH_KEY> sfensUniq;
   std::map<HASH_KEY, HASH_KEY> allParents;
   std::map<HASH_KEY, PackedSfen> allSfen;
 
@@ -24,10 +25,10 @@ void uni_search2(Position& pos, StateInfo* si__, Thread* th)
   states.resize(2);
 
   for (int depth = 0;; depth++) {
-    std::map<HASH_KEY, int64_t> count;
-    std::map<HASH_KEY, int> lance;
-    std::map<HASH_KEY, PackedSfen> nextSfens;
-    std::map<HASH_KEY, HASH_KEY> parents;
+    std::unordered_map<HASH_KEY, int64_t> count;
+    std::unordered_map<HASH_KEY, int> lance;
+    std::unordered_map<HASH_KEY, PackedSfen> nextSfens;
+    std::unordered_map<HASH_KEY, HASH_KEY> parents;
     for (auto& sfen : sfens) {
       //pos.set(sfen, &si, th);
 	  pos.set_from_packed_sfen(sfen, &si, th);
@@ -63,7 +64,7 @@ void uni_search2(Position& pos, StateInfo* si__, Thread* th)
       }
     }
     std::vector<PackedSfen> nextSfensAll;
-    std::set<HASH_KEY> nextSfensUniq;
+    std::unordered_set<HASH_KEY> nextSfensUniq;
     int show = 0;
     cout << "DEPTH " << depth << "*********************************************************************************************" << std::endl;
     for (auto& k : count) {
