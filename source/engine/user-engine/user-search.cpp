@@ -5,27 +5,38 @@
 
 #if defined(USER_ENGINE)
 
-void uni_search2(Position& pos, StateInfo* si, Thread* th)
+void uni_search2(Position& pos, StateInfo* si__, Thread* th)
 {
   ExtMove moves[MAX_MOVES];
-  std::vector<std::string> sfens;
-  std::set<std::string> sfensUniq;
-  std::map<std::string, std::string> allParents;
-  sfens.push_back(SFEN_HIRATE);
-  sfensUniq.insert(SFEN_HIRATE);
+  std::vector<PackedSfen> sfens;
+  std::set<HASH_KEY> sfensUniq;
+  std::map<HASH_KEY, HASH_KEY> allParents;
+  std::map<HASH_KEY, PackedSfen> allSfen;
+
+  StateInfo si;
+  PackedSfen hirate;
+  pos.set_hirate(&si, th);
+  pos.sfen_pack(hirate);
+  sfens.push_back(hirate);
+  sfensUniq.insert(si.board_long_key());
+
+  std::vector<StateInfo> states;
+  states.resize(2);
 
   for (int depth = 0;; depth++) {
     std::map<HASH_KEY, int64_t> count;
     std::map<HASH_KEY, int> lance;
-    std::map<HASH_KEY, std::string> nextSfens;
-    std::map<std::string, std::string> parents;
+    std::map<HASH_KEY, PackedSfen> nextSfens;
+    std::map<HASH_KEY, HASH_KEY> parents;
     for (auto& sfen : sfens) {
-      pos.set(sfen, si, th);
+      //pos.set(sfen, &si, th);
+	  pos.set_from_packed_sfen(sfen, &si, th);
       if (depth > 0)
-        pos.do_null_move(*si);
+        pos.do_null_move(states[0]);
       //cout << sfen << "---------------------------------------------------------------------------------------------" << std::endl;
       //cout << pos;
-      auto parent = 2 - sfensUniq.count(sfen);
+	  auto parent_key = si.board_long_key();
+      auto parent = 2 - sfensUniq.count(parent_key);
       auto endMove = generateMoves<LEGAL_ALL>(pos, moves);
       for (auto m = moves; m != endMove; m++) {
         auto piece = type_of(pos.moved_piece_before(m->move));
@@ -33,22 +44,26 @@ void uni_search2(Position& pos, StateInfo* si, Thread* th)
           //|| piece == Piece::LANCE
           )
           continue;
-        pos.do_move(*m, *si);
-        pos.set_state(si);
-        auto key = si->board_long_key();
+        pos.do_move(*m, states[1]);
+        //pos.set_state(si);
+		auto key = states[1].board_long_key();
         count[key] += parent;
         if (piece == PieceType::LANCE)
           lance[key]++;
         //if (count[key] == 1) {
-        auto s = pos.sfen();
-        nextSfens[key] = s;
-        parents[s] = sfen;
+		if (nextSfens.find(key) == nextSfens.end()) {
+		  PackedSfen s;
+		  pos.sfen_pack(s);
+		  nextSfens[key] = s;
+		  parents[key] = parent_key;
+		  allSfen[key] = s;
+		}
         //}
         pos.undo_move(*m);
       }
     }
-    std::vector<std::string> nextSfensAll;
-    std::set<std::string> nextSfensUniq;
+    std::vector<PackedSfen> nextSfensAll;
+    std::set<HASH_KEY> nextSfensUniq;
     int show = 0;
     cout << "DEPTH " << depth << "*********************************************************************************************" << std::endl;
     for (auto& k : count) {
@@ -57,9 +72,9 @@ void uni_search2(Position& pos, StateInfo* si, Thread* th)
         continue;
       }
       auto sfen = nextSfens[k.first];
-      nextSfensUniq.insert(sfen);
-      allParents[sfen] = parents[sfen];
-      pos.set(sfen, si, th);
+      nextSfensUniq.insert(k.first);
+      allParents[k.first] = parents[k.first];
+      pos.set_from_packed_sfen(sfen, &si, th);
       if (type_of(pos.piece_on(SQ_11)) != PieceType::LANCE || type_of(pos.piece_on(SQ_19)) != PieceType::LANCE
         || type_of(pos.piece_on(SQ_91)) != PieceType::LANCE || type_of(pos.piece_on(SQ_99)) != PieceType::LANCE) {
         cout << "LANCE" << std::endl;
@@ -70,8 +85,8 @@ void uni_search2(Position& pos, StateInfo* si, Thread* th)
       }
       if (show < 5) {
         cout << "========================================================================================" << std::endl;
-        for (auto s = sfen; allParents.find(s) != allParents.end(); s = allParents[s]) {
-          pos.set(s, si, th);
+        for (auto s = k.first; allParents.find(s) != allParents.end(); s = allParents[s]) {
+          pos.set_from_packed_sfen(allSfen[s], &si, th);
           cout << pos;
         }
         cout << "========================================================================================" << std::endl;

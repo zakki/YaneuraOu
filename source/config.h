@@ -193,7 +193,7 @@
 // sfenを256bitにpackする機能、unpackする機能を有効にする。
 // これをdefineするとPosition::packe_sfen(),unpack_sfen()が使えるようになる。
 // ※　機械学習関連で局面の読み書きをする時に使う。
-// #define USE_SFEN_PACKER
+#define USE_SFEN_PACKER
 
 
 // 置換表のprobeに必ず失敗する設定
@@ -357,8 +357,8 @@
 // 通例hash keyは64bitだが、これを128にするとPosition::state()->long_key()から128bit hash keyが
 // 得られるようになる。研究時に局面が厳密に合致しているかどうかを判定したいときなどに用いる。
 // 実験用の機能なので、128bit,256bitのhash keyのサポートはAVX2のみ。
-#define HASH_KEY_BITS 64
-//#define HASH_KEY_BITS 128
+//#define HASH_KEY_BITS 64
+#define HASH_KEY_BITS 128
 //#define HASH_KEY_BITS 256
 
 // 通常探索時の最大探索深さ
